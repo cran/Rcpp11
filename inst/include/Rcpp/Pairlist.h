@@ -8,8 +8,8 @@ namespace Rcpp{
         public DottedPairImpl<Pairlist_Impl<StoragePolicy>>
     {
     public:         
-        using Proxy = typename DottedPairProxyPolicy<Pairlist_Impl<StoragePolicy>>::DottedPairProxy ;
-        using const_Proxy = typename DottedPairProxyPolicy<Pairlist_Impl<StoragePolicy>>::const_DottedPairProxy ;
+        typedef typename DottedPairProxyPolicy<Pairlist_Impl<StoragePolicy>>::DottedPairProxy Proxy ;
+        typedef typename DottedPairProxyPolicy<Pairlist_Impl<StoragePolicy>>::const_DottedPairProxy const_Proxy;
         
         RCPP_GENERATE_CTOR_ASSIGN(Pairlist_Impl) 
         
@@ -18,7 +18,9 @@ namespace Rcpp{
         }
         
         template<typename... Args> 
-        Pairlist_Impl( const Args&... args) : Pairlist_Impl(pairlist(args...)) {}
+        Pairlist_Impl( const Args&... args) {
+            Storage::set__(pairlist(args...)) ;
+        }
        
     } ;
         

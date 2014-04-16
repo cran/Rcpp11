@@ -20,15 +20,15 @@ namespace Rcpp{
     {
     public:
         
-        using value_type      = SEXP ;
-        using stored_type     = SEXP ;
-        using init_type       = SEXP ;
-        using Proxy           = internal::generic_proxy<EXPRSXP> ;
-        using const_Proxy     = internal::const_generic_proxy<EXPRSXP> ;
-        using iterator        = internal::Proxy_Iterator<Proxy> ; 
-        using const_iterator  = internal::const_Proxy_Iterator<const_Proxy> ;
-        using NameProxy       = internal::generic_name_proxy<EXPRSXP> ;
-        using const_NameProxy = internal::generic_const_name_proxy<EXPRSXP> ;
+        typedef SEXP value_type  ;
+        typedef SEXP stored_type ;
+        typedef SEXP init_type   ;
+        typedef internal::generic_proxy<EXPRSXP>            Proxy           ;
+        typedef internal::const_generic_proxy<EXPRSXP>      const_Proxy     ;
+        typedef internal::Proxy_Iterator<Proxy>             iterator        ; 
+        typedef internal::const_Proxy_Iterator<const_Proxy> const_iterator  ;
+        typedef internal::generic_name_proxy<EXPRSXP>       NameProxy       ;
+        typedef internal::generic_const_name_proxy<EXPRSXP> const_NameProxy ;
         
         using VectorOffset<Vector>::size ;
         
@@ -38,22 +38,19 @@ namespace Rcpp{
             Storage::set__( r_cast<EXPRSXP>( x ) ) ;
         }
         
-        Vector( int n ) : Vector(Rf_allocVector(EXPRSXP, n) ) {}
-        Vector() : Vector(0) {}
-    
-        Vector( const char* st){
-            ParseStatus status;
-            Shield<SEXP> expr = Rf_mkString( st );
-            Shield<SEXP> res  = R_ParseVector(expr, -1, &status, R_NilValue);
-            if( status != PARSE_OK ){
-                throw parse_error() ;
-            }
-            Storage::set__(res) ;
+        Vector( int n ) {
+            reset(n) ;
         }
-        Vector( const std::string& st) : Vector( st.c_str()){} ;
+        Vector() {
+            reset(0) ;
+        }
+    
+        Vector( const char* st){init_from_string(st); }
+        Vector( const std::string& st) { init_from_string(st.c_str()); }
         
         template <bool NA, typename Expr>
-        Vector( const SugarVectorExpression<EXPRSXP,NA,Expr>& other ) : Vector(other.size()) {
+        Vector( const SugarVectorExpression<EXPRSXP,NA,Expr>& other ) {
+            reset(other.size());
             other.apply(*this) ;
         }
     
@@ -68,6 +65,16 @@ namespace Rcpp{
         }
         
     private:
+        
+        inline void init_from_string( const char* st ){
+            ParseStatus status;
+            Shield<SEXP> expr = Rf_mkString( st );
+            Shield<SEXP> res  = R_ParseVector(expr, -1, &status, R_NilValue);
+            if( status != PARSE_OK ){
+                throw parse_error() ;
+            }
+            Storage::set__(res) ;
+        }
         
         inline void reset(int n){
             Storage::set__(Rf_allocVector(EXPRSXP, n) ) ;        

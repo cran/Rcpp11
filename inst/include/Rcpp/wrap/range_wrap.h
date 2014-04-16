@@ -27,7 +27,11 @@ inline SEXP range_wrap_enum__dispatch( InputIterator first, InputIterator last, 
 }
 template<typename InputIterator, typename T>
 inline SEXP range_wrap_enum__dispatch( InputIterator first, InputIterator last, std::false_type ){
-    return range_wrap_dispatch<InputIterator, typename std::underlying_type<T>::type >( first, last ) ;
+    #if defined(RCPP_HAS_UNDERLYING_TYPE)
+        return range_wrap_dispatch<InputIterator, typename std::underlying_type<T>::type >( first, last ) ;
+    #else 
+        return range_wrap_dispatch<InputIterator,int>( first, last ) ;
+    #endif
 }
 
 template<typename InputIterator, typename T>
@@ -96,7 +100,7 @@ inline SEXP range_wrap_dispatch___impl__cast( InputIterator first, InputIterator
     Shield<SEXP> names = Rf_allocVector( STRSXP, size ) ;
     typedef typename ::Rcpp::traits::storage_type<RTYPE>::type CTYPE ;
     CTYPE* start = r_vector_start<RTYPE>(x) ;
-    int i =0;
+    size_t i =0;
     std::string buf ; 
     for( ; i<size; i++, ++first){
         start[i] = (*first).second ;

@@ -3,6 +3,8 @@
 
 // #define RCPP_DEBUG_LEVEL 1
 
+#include <Rcpp/platform.h>
+
 #include <cmath>
 #include <csetjmp>
 
@@ -71,26 +73,26 @@ namespace Rcpp{
     template <int RTYPE, template <class> class StoragePolicy = PreserveStorage> 
     class Matrix ;
     
-    using CharacterVector = Vector<STRSXP> ;
-    using List = Vector<VECSXP> ; 
-    using ExpressionVector = Vector<EXPRSXP> ; 
+    typedef Vector<STRSXP> CharacterVector ;
+    typedef Vector<VECSXP> List ; 
+    typedef Vector<EXPRSXP> ExpressionVector ; 
     
     RCPP_API_CLASS_DECL(RObject) 
     RCPP_API_CLASS_DECL(Language) 
-    RCPP_API_CLASS_DECL(Pairlist) ;
-    RCPP_API_CLASS_DECL(Environment) ;
-    RCPP_API_CLASS_DECL(Promise) ;
-    RCPP_API_CLASS_DECL(WeakReference) ;
-    RCPP_API_CLASS_DECL(S4) ;
-    RCPP_API_CLASS_DECL(Formula) ;
-    RCPP_API_CLASS_DECL(Reference) ;
-    RCPP_API_CLASS_DECL(Function) ;
+    RCPP_API_CLASS_DECL(Pairlist)
+    RCPP_API_CLASS_DECL(Environment)
+    RCPP_API_CLASS_DECL(Promise)
+    RCPP_API_CLASS_DECL(WeakReference)
+    RCPP_API_CLASS_DECL(S4)
+    RCPP_API_CLASS_DECL(Formula)
+    RCPP_API_CLASS_DECL(Reference)
+    RCPP_API_CLASS_DECL(Function)
     
     template < template <class> class StoragePolicy > class Symbol_Impl ;
-    using Symbol = Symbol_Impl<NoProtectStorage> ;
+    typedef Symbol_Impl<NoProtectStorage> Symbol ;
     
     template < template <class> class StoragePolicy > class DataFrame_Impl ;
-    using DataFrame = DataFrame_Impl<PreserveStorage> ;
+    typedef DataFrame_Impl<PreserveStorage> DataFrame ;
     
 }
 namespace Rcpp{

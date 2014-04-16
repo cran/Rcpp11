@@ -20,15 +20,15 @@ namespace Rcpp{
     {
     public:
         
-        using value_type      = SEXP ;
-        using stored_type     = SEXP ;
-        using init_type       = const char* ;
-        using Proxy           = internal::string_proxy<STRSXP> ;
-        using const_Proxy     = internal::const_string_proxy<STRSXP> ;
-        using iterator        = internal::Proxy_Iterator<Proxy> ; 
-        using const_iterator  = internal::const_Proxy_Iterator<const_Proxy> ;
-        using NameProxy       = internal::string_name_proxy<STRSXP> ;
-        using const_NameProxy = internal::string_const_name_proxy<STRSXP> ;
+        typedef  SEXP value_type ;
+        typedef  SEXP stored_type ;
+        typedef  const char* init_type  ;
+        typedef  internal::string_proxy<STRSXP>              Proxy           ;
+        typedef  internal::const_string_proxy<STRSXP>        const_Proxy     ;
+        typedef  internal::Proxy_Iterator<Proxy>             iterator        ; 
+        typedef  internal::const_Proxy_Iterator<const_Proxy> const_iterator  ;
+        typedef  internal::string_name_proxy<STRSXP>         NameProxy       ;
+        typedef  internal::string_const_name_proxy<STRSXP>   const_NameProxy ;
         
         using VectorOffset<Vector>::size ;
         
@@ -38,22 +38,35 @@ namespace Rcpp{
             Storage::set__( r_cast<STRSXP>( x ) ) ;
         }
         
-        Vector( int n ) : Vector(Rf_allocVector(STRSXP, n) ) {}
-        Vector() : Vector(0) {}
+        Vector( int n ) {
+            reset(n); 
+        }
+        Vector() {
+            reset(0); 
+        }
     
-        Vector( int n, const char* s ) : Vector(n) {
+        Vector( int n, const char* s ) {
+            reset(n) ;
             std::fill( begin(), end(), Rf_mkChar(s) ) ;
         }
         
-        Vector( const char* st ) : Vector(1, st ){}         
-        Vector( const std::string& st ) : Vector( 1, st.c_str() ) {}
+        Vector( const char* st ){
+            reset(1) ;
+            *begin() = st ;
+        }         
+        Vector( const std::string& st ) {
+            reset(1) ;
+            *begin() = st ;
+        }
         
-        Vector( std::initializer_list<const char*> list ) : Vector(list.size()){
+        Vector( std::initializer_list<const char*> list ){
+            reset(list.size()) ;
             std::copy( list.begin(), list.end(), begin() ) ;
         }
     
         template <bool NA, typename Expr>
-        Vector( const SugarVectorExpression<STRSXP,NA,Expr>& other ) : Vector(other.size()) {
+        Vector( const SugarVectorExpression<STRSXP,NA,Expr>& other ) {
+            reset( other.size() );
             other.apply(*this) ;
         }
     

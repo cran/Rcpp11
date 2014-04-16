@@ -2,8 +2,8 @@
 #define Rcpp__exceptions__h
 
 // for backtraces
-#if defined(__GNUC__) || defined(__clang__)
-#include <execinfo.h>
+#if ( defined(__GNUC__) || defined(__clang__) ) &&  !defined(_WIN32)
+    #include <execinfo.h>
 #endif
 
 namespace Rcpp{
@@ -34,13 +34,13 @@ public:
         add_backtrace_information(message);
     }
     virtual ~exception() noexcept {}
-    virtual const char* what() const noexcept override { return message.c_str() ; }
+    virtual const char* what() const noexcept /* override */ { return message.c_str() ; }
 
 private:
     std::string message ;
     
     // A private function for adding backtrace information if possible
-    #if defined(__GNUC__) || defined(__clang__)
+    #if ( defined(__GNUC__) || defined(__clang__) ) &&  !defined(_WIN32)
     void add_backtrace_information(std::string& message) {
       const size_t max_depth = 100;
       size_t stack_depth;
@@ -90,13 +90,24 @@ private:
     #endif
 } ;
 
+// FIXME: we should not have to do this, but there is no std::to_string on
+//        windows (at least not with gcc 4.6.3)
+template <typename T>
+std::string NumberToString( T Number ){
+   std::ostringstream ss;
+   ss << Number;
+   return ss.str();
+}
+
 class no_such_env : public exception {
 public:
     no_such_env( const std::string& name ) noexcept: 
       exception( std::string("No such environment: '") + name + "'" ){}
       
     no_such_env( int pos ) noexcept:
-      exception( "No environment in given position '" + std::to_string(pos) + "'") {}
+      exception( "No environment in given position '" + NumberToString(pos) + "'") {}  
+      
+    virtual ~no_such_env() noexcept {}  
 } ;
 
 class file_io_error : public exception {
@@ -105,12 +116,14 @@ public:
       exception( std::string("File IO error: '") + file_ + "'" ), file(file_) {}
       
     file_io_error(int code, const std::string& file_) noexcept:
-      exception( "File IO error " + std::to_string(code) + ": '" + file_ + "'"), file(file_) {}
+      exception( "File IO error " + NumberToString(code) + ": '" + file_ + "'"), file(file_) {}
       
     file_io_error(const std::string& msg, const std::string& file_) noexcept:
       exception( msg + ": '" + file_ + "'"), file(file_) {}
       
-    std::string filePath() const noexcept{ return file ; }
+    std::string filePath() const noexcept{ return file ; }  
+    
+    virtual ~file_io_error() noexcept {}
 private:
     std::string file;
 } ;
@@ -119,12 +132,15 @@ class file_not_found : public file_io_error {
 public:
     file_not_found(const std::string& file) noexcept: 
       file_io_error("File not found", file) {}
+      
+    virtual ~file_not_found() noexcept {}
 };
 
 class file_exists : public file_io_error {
 public:
     file_exists(const std::string& file) noexcept: 
       file_io_error("File already exists", file) {}
+    virtual ~file_exists() noexcept {}
 };
 
 #define RCPP_EXCEPTION_CLASS(__CLASS__,__WHAT__)                               \
@@ -133,12 +149,14 @@ public:                                                                        \
     explicit __CLASS__( const std::string& msg ) noexcept: exception( __WHAT__ ) \
   {}                                                                           \
   explicit __CLASS__( const char* msg ) noexcept: exception( __WHAT__ ){}      \
+  virtual ~__CLASS__() noexcept {}                                             \
 };                                                                             
 
 #define RCPP_SIMPLE_EXCEPTION_CLASS(__CLASS__,__MESSAGE__)                     \
 class __CLASS__ : public exception{                                            \
 public:                                                                        \
-    __CLASS__() noexcept: exception(__MESSAGE__) {}                              \
+    __CLASS__() noexcept: exception(__MESSAGE__) {}                            \
+    virtual ~__CLASS__() noexcept{}                                            \
 };                                                                             
 
 RCPP_SIMPLE_EXCEPTION_CLASS(incompatible_dimensions, "incompatible dimensions")

@@ -8,8 +8,8 @@ namespace Rcpp{
         public RObjectMethods<DataFrame_Impl<StoragePolicy>>, 
         public AttributeProxyPolicy<DataFrame_Impl<StoragePolicy>>
         {
-    public: 
-        using List = Vector<VECSXP, StoragePolicy>; 
+    public:
+        typedef Vector<VECSXP, StoragePolicy> List ; 
         
         DataFrame_Impl() : data(empty_data_frame()){}
         DataFrame_Impl(SEXP x) {
@@ -18,10 +18,14 @@ namespace Rcpp{
         DataFrame_Impl( const DataFrame_Impl& other) : data(other.data){}
                 
         template <typename T> 
-        DataFrame_Impl( const T& obj) : DataFrame_Impl(wrap(obj)){}
+        DataFrame_Impl( const T& obj) {
+            set_sexp(wrap(obj));
+        }
                 
         template <typename Proxy>                     
-        DataFrame_Impl( const GenericProxy<Proxy>& proxy ) : DataFrame_Impl( proxy.get() ){}
+        DataFrame_Impl( const GenericProxy<Proxy>& proxy ) {
+            set_sexp( proxy.get() ); 
+        }
         
         DataFrame_Impl& 
         operator=( DataFrame_Impl& other) {
@@ -76,7 +80,6 @@ namespace Rcpp{
                 data = x ;
             } else{
                 data = internal::convert_using_rfunction( x, "as.data.frame" ) ;
-                
             }    
         }
         
@@ -90,13 +93,11 @@ namespace Rcpp{
             
             bool use_default_strings_as_factors = true ;
             bool strings_as_factors = true ;
-            int strings_as_factors_index = -1 ;
             int n = obj.size() ;
             CharacterVector names = obj.attr( "names" ) ;
             if( !names.isNULL() ){
                 for( int i=0; i<n; i++){
                     if( names[i] == "stringsAsFactors" ){
-                        strings_as_factors_index = i ;
                         use_default_strings_as_factors = false ;        
                         if( !as<bool>(obj[i]) ) strings_as_factors = false ;
                         break ;         
