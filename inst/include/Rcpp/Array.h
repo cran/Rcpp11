@@ -3,18 +3,16 @@
 
 namespace Rcpp{
     
-    template <int N, int RTYPE, template <class> class StoragePolicy = PreserveStorage>
+    template <int N, int RTYPE, typename Storage = PreserveStorage>
     class Array {
     public:
-        typedef Vector<RTYPE,StoragePolicy> Vec; 
-        typedef typename Vec::Proxy Proxy; 
-        typedef typename Vec::const_Proxy const_Proxy ; 
+        typedef Vector<RTYPE,Storage> Vec; 
+        typedef typename Vec::Proxy Proxy;
         
         Array( SEXP x ) : index(), data(x) {
-          IntegerVector dim = data.attr("dim") ;
-          if( dim.size() != N ) stop("incompatible dimensions") ;
-          for( int i=0; i<N; i++)
-            index[i] = dim[i] ;
+            IntegerVector dim = attr(data, "dim") ;
+            if( dim.size() != N ) stop("incompatible dimensions") ;
+            std::copy( dim.begin(), dim.end(), index.begin() ) ;
         }
         
         template <
@@ -25,9 +23,9 @@ namespace Rcpp{
             index({ static_cast<size_t>(args)... }), 
             data(index.prod())
         {
-            data.attr("dim") = index ;    
+            attr(data, "dim") = index ;    
         }
-    
+        
         template < 
             typename... Args, 
             typename = typename std::enable_if< ValidIndexArgs<N,Args...>() >::type
@@ -40,26 +38,33 @@ namespace Rcpp{
             typename... Args, 
             typename = typename std::enable_if< ValidIndexArgs<N,Args...>() >::type
         >
-        const_Proxy operator()( Args... args) const {
+        const Proxy operator()( Args... args) const {
             return data[ index.get_index( args... ) ];    
         }
         
         inline operator SEXP() const { return data ; }
         inline operator SEXP(){ return data ; }
         
+        template <typename T>
+        Array& fill( T value ){
+            std::fill( data.begin(), data.end(), value ) ;
+            return *this ;
+        }
+        
     private:
         Index<N> index ;
         Vec data ;
+        
     } ;
     
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using NumericArray   = Array<N, REALSXP, StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using DoubleArray    = Array<N, REALSXP, StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using IntegerArray   = Array<N, INTSXP , StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using StringArray    = Array<N, STRSXP , StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using CharacterArray = Array<N, STRSXP , StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using LogicalArray   = Array<N, LGLSXP , StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using RawArray       = Array<N, RAWSXP , StoragePolicy> ;
-    // template <int N, template <class> class StoragePolicy = PreserveStorage> using ComplexArray   = Array<N, CPLXSXP, StoragePolicy> ;
+    // template <int N, typename Storage = PreserveStorage> using NumericArray   = Array<N, REALSXP, Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using DoubleArray    = Array<N, REALSXP, Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using IntegerArray   = Array<N, INTSXP , Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using StringArray    = Array<N, STRSXP , Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using CharacterArray = Array<N, STRSXP , Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using LogicalArray   = Array<N, LGLSXP , Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using RawArray       = Array<N, RAWSXP , Storage> ;
+    // template <int N, typename Storage = PreserveStorage> using ComplexArray   = Array<N, CPLXSXP, Storage> ;
     
 } // Rcpp 
 

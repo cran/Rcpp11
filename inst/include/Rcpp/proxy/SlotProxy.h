@@ -3,15 +3,14 @@
 
 namespace Rcpp{
     
-template <typename CLASS>
-class SlotProxyPolicy {
-public:
-    
-    class SlotProxy : public GenericProxy<SlotProxy> {
+    template <typename CLASS>
+    class SlotProxy : public GenericProxy<SlotProxy<CLASS>> {
     public:
-        SlotProxy( CLASS& v, const std::string& name) : parent(v), slot_name(Rf_install(name.c_str())) {
+        SlotProxy( CLASS& v, Symbol name) : 
+            parent(v), slot_name(name) 
+        {
             if( !R_has_slot( v, slot_name) ){
-                throw no_such_slot() ; 
+                stop("no such slot: %s", name.c_str() ) ; 
             }  
         }
         
@@ -35,7 +34,7 @@ public:
         
     private:
         CLASS& parent; 
-        SEXP slot_name ;
+        Symbol slot_name ;
             
         SEXP get() const {
             return R_do_slot( parent, slot_name ) ;
@@ -45,64 +44,26 @@ public:
         }
     } ;
     
-    class const_SlotProxy : public GenericProxy<const_SlotProxy> {
-    public:
-        const_SlotProxy( const CLASS& v, const std::string& name) 
-          : parent(v), slot_name(Rf_install(name.c_str()))
-        {
-            if( !R_has_slot( v, slot_name) ){
-                throw no_such_slot() ; 
-            }        
-        }
-        
-        template <typename T> operator T() const {
-            return as<T>(get()) ;  
-        }
-        inline operator SEXP() const { 
-            return get() ; 
-        }
-        
-    private:
-        const CLASS& parent; 
-        SEXP slot_name ;
-            
-        SEXP get() const {
-            return R_do_slot( parent, slot_name ) ;  
-        }
-    } ;
-    
-    SlotProxy slot(const std::string& name) {
-        SEXP x = ref() ;
-        if( !Rf_isS4(x) ) throw not_s4() ;
-        return SlotProxy( static_cast<CLASS&>(*this) , name ) ;
-    }
-    const_SlotProxy slot(const std::string& name) const {
-        SEXP x = ref() ;
-        if( !Rf_isS4(x) ) throw not_s4() ;
-        return const_SlotProxy( static_cast<const CLASS&>(*this) , name ) ; 
+    template <typename CLASS>
+    SlotProxy<CLASS> slot(CLASS& x, const std::string& name) {
+        if( !Rf_isS4(x) ) stop("not an S4 object");
+        return SlotProxy<CLASS>(x, name ) ;
     }
     
-    bool hasSlot(const std::string& name) const {
-        SEXP data = ref() ;
-        if( !Rf_isS4(data) ) throw not_s4() ;
+    template <typename CLASS>
+    const SlotProxy<CLASS> slot(const CLASS& x, const std::string& name) {
+        if( !Rf_isS4(x) ) stop("not an S4 object");
+        return SlotProxy<CLASS>( const_cast<CLASS&>(x) , name ) ; 
+    }
+    
+    inline bool has_slot(SEXP data, const std::string& name) {
+        if( !Rf_isS4(data) ) stop("not an S4 object");
         return R_has_slot( data, Rf_mkString(name.c_str()) ) ;    
     }
     
-    inline bool isS4() const { 
-        return ::Rf_isS4(ref()) ; 
+    inline bool isS4(SEXP data) { 
+        return ::Rf_isS4(data) ; 
     }
     
-private:
-    
-    CLASS& ref(){
-        return static_cast<CLASS&>(*this) ;    
-    }
-    
-    const CLASS& ref() const{
-        return static_cast<const CLASS&>(*this) ;    
-    }
-    
-} ;
-
 }
 #endif

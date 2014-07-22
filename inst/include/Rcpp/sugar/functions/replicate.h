@@ -4,35 +4,83 @@
 namespace Rcpp{
     namespace sugar{
     
-        template <typename OUT, typename CallType >
+        template <typename CallType>
         class Replicate : 
-            public SugarVectorExpression< Rcpp::traits::r_sexptype_traits<OUT>::rtype , true, Replicate<OUT,CallType> >, 
-            public custom_sugar_vector_expression {
+            public SugarVectorExpression<
+                typename std::result_of<CallType()>::type, 
+                Replicate<CallType> 
+            >, 
+            public custom_sugar_vector_expression
+        {
         public:
-            Replicate( size_t n_, CallType call_ ): n(n_), call(std::move(call_)) {}
+            typedef typename std::result_of<CallType()>::type value_type ;
+            typedef replicate_iterator<value_type, CallType> const_iterator ;
             
-            inline OUT operator[]( int i ) const {
-                return call() ;
-            }
-            inline int size() const { return n ; }
+            Replicate( R_xlen_t n_, CallType call_ ): n(n_), call(call_) {}
+            
+            inline R_xlen_t size() const { return n ; }
             
             template <typename Target>
             inline void apply( Target& target ) const {
                 std::generate_n( target.begin(), n, call ) ;  
             }
             
+            template <typename Target>
+            inline void apply_parallel( Target& target, int nthreads ) const {
+                parallel::generate_n(nthreads, target.begin(), n, call) ;    
+            }
+            
+            inline const_iterator begin() const { return const_iterator( call, 0 ) ; }
+            inline const_iterator end() const { return const_iterator( call, size() ) ; }
+            
         private:
-            size_t n ;
+            R_xlen_t n ;
             CallType call ; 
         } ;
     
-    
+        template <typename Function, typename... Args >
+        class ReplicateFunctionBinder {
+        public:
+            typedef typename std::tuple< typename std::decay<Args>::type ...> Tuple ;
+            typedef typename Rcpp::traits::index_sequence<Args...>::type Sequence ;
+            typedef typename std::result_of<Function(Args...)>::type value_type ;
+            
+            ReplicateFunctionBinder( Function fun_, Args&&... args) : 
+                fun(fun_), tuple( std::forward<Args>(args)...){}
+                
+            inline value_type operator()() const {
+                return apply( Sequence() ) ;        
+            }
+                
+        private:
+            Function fun ; 
+            Tuple tuple ;
+            
+            template <int... S>
+            inline value_type apply( Rcpp::traits::sequence<S...> ) const {
+                return fun( std::get<S>(tuple)... );  
+            }
+            
+        } ;
+        
+        template <typename Function, typename... Args>
+        struct replicate_dispatch_function_type {
+            typedef ReplicateFunctionBinder<Function,Args...> type ;
+        } ;
+        
+        template <typename Function>
+        struct replicate_dispatch_function_type<Function> {
+            typedef Function type ;
+        } ;
+        
+        
+        
     } // sugar
     
-    template <typename CallType>
-    inline sugar::Replicate<typename std::result_of<CallType()>::type, CallType> 
-    replicate( size_t n, CallType call){
-        return sugar::Replicate<typename std::result_of<CallType()>::type, CallType>( n, call ) ;    
+    template <typename CallType, typename... Args>
+    inline auto replicate( R_xlen_t n, CallType call, Args&&... args) -> sugar::Replicate< typename sugar::replicate_dispatch_function_type<CallType,Args...>::type > {
+        typedef typename sugar::replicate_dispatch_function_type<CallType,Args...>::type function_type ;
+        return sugar::Replicate<function_type>( n, function_type(call,std::forward<Args>(args)...) ) ;    
     }
 
 

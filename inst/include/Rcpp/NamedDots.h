@@ -3,37 +3,39 @@
 
 namespace Rcpp{ 
     
-    template < template <class> class StoragePolicy>
+    template <typename Storage>
     class NamedDots_Impl {
     public:
-        typedef Environment_Impl<StoragePolicy> Environment ;
-        typedef Promise_Impl<StoragePolicy> Promise ;
+        typedef Environment_Impl<Storage> Environment ;
+        typedef Promise_Impl<Storage> Promise ;
         
         NamedDots_Impl( Environment env ){
             SEXP dots = env.find("...") ;
-            while(dots != R_NilValue){
-                promises.push_back(CAR(dots)) ;
-                SEXP tag = TAG(dots) ;
-                if(tag==R_NilValue) 
-                    stop("unnamed contribution to ... in NamedDots") ; 
-                symbols.push_back(tag) ;
-                dots = CDR(dots);
+            if( dots != R_MissingArg ){
+                while(dots != R_NilValue){
+                    promises.push_back(CAR(dots)) ;
+                    SEXP tag = TAG(dots) ;
+                    if(tag==R_NilValue) 
+                        stop("unnamed contribution to ... in NamedDots") ; 
+                    symbols.push_back(tag) ;
+                    dots = CDR(dots);
+                }
             }
         }
         
-        inline int size() const {
+        inline R_xlen_t size() const {
             return promises.size() ;    
         }
         
-        inline Promise& promise(int i) {
+        inline Promise& promise(R_xlen_t i) {
             return promises[i] ;
         }
         
-        inline Environment environment(int i){
+        inline Environment environment(R_xlen_t i){
             return promises[i].environment() ;    
         }
         
-        inline Symbol& symbol(int i){
+        inline Symbol& symbol(R_xlen_t i){
             return symbols[i] ;
         }
         

@@ -35,7 +35,7 @@ namespace Rcpp{
         template <typename T>
         struct PrimitiveIs{
             inline bool test(SEXP x){
-                return Rf_length(x) == 1 && 
+                return Rf_xlength(x) == 1 && 
                     TYPEOF(x) == Rcpp::traits::r_sexptype_traits<T>::rtype ;    
             }
         };
@@ -54,8 +54,8 @@ namespace Rcpp{
         struct is_type{
             typedef typename std::conditional<
                 Rcpp::traits::is_primitive<T>::value, 
-                typename PrimitiveIs<T>::type,
-                typename Is<T>::type
+                PrimitiveIs<T>,
+                Is<T>
             >::type type ;
         } ;
         

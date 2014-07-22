@@ -5,7 +5,7 @@ namespace Rcpp{
     
     template <int N, typename... Args>
     constexpr bool ValidIndexArgs() {
-        return traits::and_<std::is_convertible<Args, size_t>...>::value && (N == sizeof...(Args) ) ;   
+        return traits::and_<std::is_convertible<Args, int>...>::value && (N == sizeof...(Args) ) ;   
     }
     
     template <int N>
@@ -18,8 +18,8 @@ namespace Rcpp{
             typename... Args, 
             typename = typename std::enable_if< ValidIndexArgs<N,Args...>() >::type 
         >
-        Index( Args... args ) : dimensions({ static_cast<size_t>(args)... }) {}
-    
+        Index( Args... args ) : dimensions({{ static_cast<size_t>(args)... }}) {}
+        
         template < 
             typename... Args, 
             typename = typename std::enable_if< ValidIndexArgs<N,Args...>() >::type
@@ -29,7 +29,7 @@ namespace Rcpp{
         }
     
         inline size_t prod(){
-            return std::accumulate( begin(dimensions), end(dimensions), 1, std::multiplies<double>() ) ;     
+            return std::accumulate( dimensions.begin(), dimensions.end(), 1, std::multiplies<double>() ) ;     
         }
         inline size_t size(){ 
             return N ;
@@ -39,8 +39,10 @@ namespace Rcpp{
         inline operator SEXP() { return wrap( dimensions ); }
         
         inline size_t& operator[](int i){
-          return dimensions[i] ;
+            return dimensions[i] ;
         }
+        
+        inline typename std::array<size_t,N>::iterator begin(){ return dimensions.begin() ; }
         
     private:
         
@@ -53,7 +55,7 @@ namespace Rcpp{
             return first ;
         }
         
-        std::array<size_t,N> dimensions ;
+        std::array<int,N> dimensions ;
         
     } ;
      

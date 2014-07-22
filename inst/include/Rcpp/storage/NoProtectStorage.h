@@ -3,32 +3,23 @@
 
 namespace Rcpp{ 
 
-    template <typename CLASS>
     class NoProtectStorage {
     public:
-        
-        inline void set__(SEXP x){
+        NoProtectStorage(): data(R_NilValue){}
+        NoProtectStorage(SEXP data_) : data(data_){}
+        inline NoProtectStorage& operator=(SEXP x){ 
             data = x ;
+            return *this ;
         }
-        
-        inline SEXP get__() const {
-            return data ;    
-        }
-        
-        inline void copy__(const CLASS& other){
-            set__(other.get__());
-        }
-        
-        inline void steal__(CLASS& other){
-            set__(other.invalidate__());
-        }
-        
         inline operator SEXP() const { return data; }
+        
+        // allowing Shield to be used with R internals macros
+        inline SEXP operator->() const {
+            return data;
+        }
         
     private:
         SEXP data ;
-        
-        inline SEXP invalidate__(){ return data ;}
         
     } ;
     

@@ -1,6 +1,16 @@
 #ifndef Rcpp__R__h
 #define Rcpp__R__h
 
+// we define our own Rboolean, compatible with R's but more useful to us
+#undef FALSE
+#undef TRUE
+extern "C" {
+    typedef enum { FALSE = 0, TRUE = 1, NA_VALUE = INT_MIN } Rboolean;
+}
+
+// forbid inclusion of R's Boolean.h file
+#define R_EXT_BOOLEAN_H_
+
 // include R headers, but set R_NO_REMAP and access everything via Rf_ prefixes
 #define R_NO_REMAP
 #define USE_RINTERNALS

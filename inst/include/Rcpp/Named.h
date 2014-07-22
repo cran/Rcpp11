@@ -33,6 +33,15 @@ public:
     Argument operator[]( const std::string& arg) const {
         return Argument( arg ) ;
     }
+    Argument operator[]( const char* arg) const {
+        return Argument( arg ) ;
+    }
+    
+    template <typename T>
+    Rcpp::functional::Capture<T> operator[]( T fun ) const {
+        return Rcpp::functional::Capture<T>(fun) ;
+    }
+    
     Argument operator()(const std::string& arg) const {
         return Argument( arg ) ;
     }

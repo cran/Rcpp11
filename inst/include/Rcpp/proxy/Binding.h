@@ -1,15 +1,10 @@
 #ifndef Rcpp_proxy_EnvironmentBinding_h
 #define Rcpp_proxy_EnvironmentBinding_h
 
-
-
 namespace Rcpp{
     
-template <typename EnvironmentClass>
-class BindingPolicy {
-public:
-    
-    class Binding : public GenericProxy<Binding> {
+    template <typename EnvironmentClass>
+    class Binding : public GenericProxy<Binding<EnvironmentClass>> {
     public:
         Binding( EnvironmentClass& env_, std::string  name_) : 
             env(env_), name(std::move(name_)){}
@@ -59,43 +54,5 @@ public:
         std::string name ;
     } ;
     
-    class const_Binding : public GenericProxy<const_Binding> {
-    public:
-        const_Binding( const EnvironmentClass& env_, std::string  name_) : 
-            env(env_), name(std::move(name_)){}
-        
-        inline bool active() const { 
-            return env.bindingIsActive(name) ;    
-        }
-        inline bool locked() const {
-            return env.bindingIsLocked(name) ;    
-        }
-        inline bool exists() const {
-            return env.exists(name) ;    
-        }
-        template <typename T> operator T() const {
-            return as<T>( get() ) ;
-        }
-        
-    private:
-        
-        SEXP get() const {
-            return env.get( name ) ;    
-        }
-        
-        const EnvironmentClass& env ;
-        std::string name ;
-    } ;
-    
-    const_Binding operator[]( const std::string& name) const {
-        return const_Binding( static_cast<const EnvironmentClass&>(*this), name ) ;    
-    }
-    Binding operator[](const std::string& name){
-        return Binding( static_cast<EnvironmentClass&>(*this), name ) ;  
-    }
-    
-} ;
-
-
 }
 #endif

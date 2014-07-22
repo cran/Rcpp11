@@ -2,89 +2,83 @@
 #define Rcpp__sugar__sum_h
 
 namespace Rcpp{
-namespace sugar{
-
-template <int RTYPE, bool NA, typename T>
-class Sum : public Lazy< typename Rcpp::traits::storage_type<RTYPE>::type , Sum<RTYPE,NA,T> > {
-public:
-    typedef typename Rcpp::VectorBase<RTYPE,NA,T> VEC_TYPE ;
-    typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
+    namespace sugar{
     
-    Sum( const VEC_TYPE& object_ ) : object(object_){}
-
-    STORAGE get() const {
-        STORAGE result = 0 ;
-        int n = object.size() ;
-        STORAGE current ;
-        for( int i=0; i<n; i++){
-            current = object[i] ;
-            if( current == NA ) 
-                return NA ;
-            result += current ;
+        template <typename T>
+        inline T get_zero(){
+            return static_cast<T>(0) ;
         }
-        return result ;
-    }         
-private:
-    const VEC_TYPE& object ;
-} ;
-// RTYPE = REALSXP
-template <bool NA, typename T>
-class Sum<REALSXP,NA,T> : public Lazy< double , Sum<REALSXP,NA,T> > {
-public:
-    typedef typename Rcpp::VectorBase<REALSXP,NA,T> VEC_TYPE ;
+        template <>
+        inline Rcomplex get_zero<Rcomplex>(){
+            Rcomplex cx = {0.0,0.0};
+            return cx ;
+        }
+        
+        template <typename eT, typename Expr>
+        class Sum {
+        public:
+            Sum( const SugarVectorExpression<eT,Expr>& object_ ) : object(object_){}
+        
+            eT get() const {
+                eT result = get_zero<eT>() ;
+                R_xlen_t n = object.size() ;
+                eT current ;
+                auto it = sugar_begin(object) ;
+                for( R_xlen_t i=0; i<n; i++, ++it){
+                    current = *it ;
+                    if( current == NA ) 
+                        return NA ;
+                    result += current ;
+                }
+                return result ;
+            }         
+        private:
+            const SugarVectorExpression<eT,Expr>& object ;
+        } ;
+        
+        template <typename Expr>
+        class Sum<Rboolean,Expr> {
+        public:
+            Sum( const SugarVectorExpression<Rboolean,Expr>& object_ ) : object(object_){}
+        
+            int get() const {
+                int result = 0 ;
+                for( Rboolean current: object.get_ref() ){
+                    switch( current ){
+                        case TRUE: 
+                            {
+                                result++; 
+                                break ;
+                            }
+                        case NA_VALUE: return NA ;
+                        default: break ;
+                    }
+                }
+                return result ;
+            }         
+        private:
+            const SugarVectorExpression<Rboolean,Expr>& object ;
+        } ;
+        
+        template <typename Expr>
+        class Sum<bool,Expr> {
+        public:
+            Sum( const SugarVectorExpression<bool,Expr>& object_ ) : object(object_){}
+        
+            int get() const {
+                return std::count( sugar_begin(object), sugar_end(object), true ) ;
+            }         
+        private:
+            const SugarVectorExpression<bool,Expr>& object ;
+        } ;
+       
+    } // sugar
     
-    Sum( const VEC_TYPE& object_ ) : object(object_){}
-
-    double get() const {
-        double result = 0 ;
-        int n = object.size() ;
-        for( int i=0; i<n; i++){
-           result += object[i] ;
-        }
-        return result ;
-    }         
-private:
-    const VEC_TYPE& object ;
-} ;
-
-
-template <int RTYPE, typename T>
-class Sum<RTYPE,false,T> : public Lazy< typename Rcpp::traits::storage_type<RTYPE>::type , Sum<RTYPE,false,T> > {
-public:
-    typedef typename Rcpp::VectorBase<RTYPE,false,T> VEC_TYPE ;
-    typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
+    template <typename eT, typename Expr>
+    inline auto sum( const SugarVectorExpression<eT, Expr>& t) -> decltype(sugar::Sum<eT, Expr>( t ).get()){
+        return sugar::Sum<eT, Expr>( t ).get() ;
+    }
     
-    Sum( const VEC_TYPE& object_ ) : object(object_){}
-
-    STORAGE get() const {
-        STORAGE result = 0 ;
-        int n = object.size() ;
-        for( int i=0; i<n; i++){
-            result += object[i] ;
-        }
-        return result ;
-    }         
-private:
-    const VEC_TYPE& object ;
-} ;
-
-} // sugar
-
-template <bool NA, typename T>
-inline sugar::Sum<INTSXP,NA,T> sum( const VectorBase<INTSXP,NA,T>& t){
-    return sugar::Sum<INTSXP,NA,T>( t ) ;
-}
-
-template <bool NA, typename T>
-inline sugar::Sum<REALSXP,NA,T> sum( const VectorBase<REALSXP,NA,T>& t){
-    return sugar::Sum<REALSXP,NA,T>( t ) ;
-}
-
-template <bool NA, typename T>
-inline sugar::Sum<LGLSXP,NA,T> sum( const VectorBase<LGLSXP,NA,T>& t){
-    return sugar::Sum<LGLSXP,NA,T>( t ) ;
-}
-
 } // Rcpp
 #endif
 

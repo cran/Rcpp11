@@ -12,7 +12,9 @@ namespace Rcpp{
         typedef typename std::iterator_traits<iterator>::difference_type difference_type;
         typedef typename std::iterator_traits<iterator>::iterator_category iterator_category;
         
-        StrideIterator( iterator it_, int n_ ) : it(it_), n(n_){}
+        StrideIterator( iterator it_, difference_type n_ ) : it(it_), n(n_){
+            RCPP_DEBUG( "StrideIterator(%s = <%p>, n = %d)\n", DEMANGLE(iterator), it, n ) ;
+        }
         
         StrideIterator& operator++(){
             it += n ;
@@ -32,22 +34,22 @@ namespace Rcpp{
             it -= n ;
             return orig ;
         }
-        StrideIterator operator+( int m ) const {
+        StrideIterator operator+( difference_type m ) const {
             return StrideIterator( it + m*n, n );    
         }
-        StrideIterator operator-( int m ) const {
+        StrideIterator operator-( difference_type m ) const {
             return StrideIterator( it - m*n, n );    
         }
-        StrideIterator& operator+=( int m ){
+        StrideIterator& operator+=( difference_type m ){
             it += n*m ;
             return *this ;
         }
-        StrideIterator& operator-=( int m ){
+        StrideIterator& operator-=( difference_type m ){
             it -= n*m ;
             return *this ;
         }
         int operator-( const StrideIterator& other){
-            return (other.it - it) / n ;
+            return (it - other.it) / n ;
         }
         
         bool operator==( const StrideIterator& other)  { return it == other.it ; } 
@@ -57,7 +59,7 @@ namespace Rcpp{
         bool operator<=( const StrideIterator& other ) { return it <= other.it ; }
         bool operator>=( const StrideIterator& other ) { return it >= other.it ; }
         
-        inline reference operator[](int i){
+        inline reference operator[](R_xlen_t i){
             return it[i*n] ;    
         }
         inline reference operator*() {
@@ -66,7 +68,7 @@ namespace Rcpp{
         
     private:
         iterator it ;
-        int n ;
+        difference_type n ;
     } ;
     
 }

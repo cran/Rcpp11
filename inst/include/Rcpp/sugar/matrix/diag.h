@@ -4,75 +4,76 @@
 namespace Rcpp{
     namespace sugar{
     
-        template <int RTYPE, bool NA, typename T>
-        class Diag_Extractor : public SugarVectorExpression< RTYPE ,NA, Diag_Extractor<RTYPE,NA,T> > {
+        template <typename eT, typename Expr>
+        class Diag_Extractor : public SugarVectorExpression<eT, Diag_Extractor<eT, Expr>> {
         public:
-            typedef typename Rcpp::MatrixBase<RTYPE,NA,T> MAT_TYPE ;
-            typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
-        
-            Diag_Extractor( const MAT_TYPE& object_ ) : object(object_), n(0) {
+            typedef indexing_iterator<eT, Diag_Extractor> const_iterator ;
+            
+            Diag_Extractor( const SugarMatrixExpression<eT, Expr>& object_ ) : object(object_), n(0) {
                 int nr = object.nrow() ;
                 int nc = object.ncol() ;
                 n = (nc < nr ) ? nc : nr ;
             }
         
-            inline STORAGE operator[]( int i ) const {
+            inline eT operator[]( R_xlen_t i ) const {
                 return object( i, i ) ;
             }
-            inline int size() const { return n; }
+            inline R_xlen_t size() const { return n; }
         
+            inline const_iterator begin() const { return const_iterator( *this, 0 ) ; }
+            inline const_iterator end() const { return const_iterator( *this, size() ) ; }
+            
         private:
-            const MAT_TYPE& object ;
+            const SugarMatrixExpression<eT, Expr>& object ;
             int n ;
         } ;
         
         
-        template <int RTYPE, bool NA, typename T>
+        template <typename eT, typename Expr>
         class Diag_Maker : 
-            public Rcpp::SugarMatrixExpression< RTYPE ,NA, Diag_Maker<RTYPE,NA,T> >, 
+            public Rcpp::SugarMatrixExpression< eT, Diag_Maker<eT, Expr> >, 
             public custom_sugar_matrix_expression {
         public:
-            typedef typename Rcpp::VectorBase<RTYPE,NA,T> VEC_TYPE ;
-            typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
+            Diag_Maker( const SugarVectorExpression<eT, Expr>& object_ ) : 
+                object(object_), start(object.get_ref().begin()), n(object_.size()) {}
         
-            Diag_Maker( const VEC_TYPE& object_ ) : object(object_), n(object_.size()) {}
-        
-            inline STORAGE operator()( int i, int j ) const {
-                return (i==j) ? object[i] : 0 ;
+            inline eT operator()( int i, int j ) const {
+                return (i==j) ? start[i] : 0 ;
             }
-            inline int size() const { return n * n; }
+            inline R_xlen_t size() const { return n * n; }
             inline int ncol() const { return n; }
             inline int nrow() const { return n; }
                
             template <typename Target>
-            inline void apply( Target& target ){
+            inline void apply( Target& target ) const {
                 auto it = target.begin() ; 
                 auto source = sugar_begin(object) ;
-                for( int j=0; j<n; j++, ++source ){
-                    *it = *source ;
-                    ++it ;
-                    std::fill_n(it, it+n, 0 );
+                for( int j=0; j<n-1; j++, ++source ){
+                    *it = *source ; 
+                    it = std::fill_n(it + 1, n, 0 ); 
                 }
+                *it = *source ;
             }
             
         private:
-            const VEC_TYPE& object ;
+            const SugarVectorExpression<eT, Expr>& object ;
+            typename Expr::const_iterator start ;
             int n ;
         } ;
     
     } // sugar
     
     
-    template <int RTYPE, bool NA, typename Vec>
-    inline sugar::Diag_Maker<RTYPE, NA, Vec>
-    diag( const VectorBase<RTYPE,NA,Vec>& x ){
-        return sugar::Diag_Maker<RTYPE,NA,Vec>(x) ;    
+    template <typename eT, typename Expr>
+    inline sugar::Diag_Maker<eT, Expr>
+    diag( const SugarVectorExpression<eT, Expr>& x ){
+        return sugar::Diag_Maker<eT, Expr>(x) ;    
     }
     
-    template <int RTYPE, bool NA, typename Mat>
-    inline sugar::Diag_Extractor<RTYPE, NA, Mat>
-    diag( const MatrixBase<RTYPE, NA, Mat>& mat){
-        return sugar::Diag_Extractor<RTYPE,NA,Mat>( mat ) ;    
+    template <typename eT, typename Expr>
+    inline sugar::Diag_Extractor<eT, Expr>
+    diag( const SugarMatrixExpression<eT ,Expr>& mat){
+        return sugar::Diag_Extractor<eT, Expr>(mat) ;    
     }
 
 } // Rcpp

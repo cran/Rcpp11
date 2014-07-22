@@ -3,17 +3,19 @@
 
 namespace Rcpp{
 
-    template <int RTYPE, template <class> class StoragePolicy>
-    class Matrix : public MatrixBase<RTYPE, true, Matrix<RTYPE,StoragePolicy> >{
+    template <int RTYPE, typename Storage>
+    class Matrix : 
+        public SugarMatrixExpression< typename Vector<RTYPE>::value_type, Matrix<RTYPE,Storage> >
+    {
     private:
-        Vector<RTYPE,StoragePolicy> vec ;
+        typedef Vector<RTYPE,Storage> Vec ;
+        Vec vec ;
         int* dims ;
         
     public:
-        typedef typename Vector<RTYPE,StoragePolicy>::Proxy Proxy;
-        typedef typename Vector<RTYPE,StoragePolicy>::const_Proxy const_Proxy;
-        typedef typename Vector<RTYPE,StoragePolicy>::iterator iterator;
-        typedef typename Vector<RTYPE,StoragePolicy>::const_iterator const_iterator;
+        typedef typename Vector<RTYPE,Storage>::Proxy Proxy;
+        typedef typename Vector<RTYPE,Storage>::iterator iterator;
+        typedef typename Vector<RTYPE,Storage>::const_iterator const_iterator;
         
         typedef MatrixColumn<RTYPE, Matrix> Column;
         typedef MatrixRow<RTYPE, Matrix> Row;
@@ -33,8 +35,8 @@ namespace Rcpp{
         
         Matrix( SEXP x ){
             SEXP d = Rf_getAttrib(x,R_DimSymbol) ;
-            if( d == R_NilValue || Rf_length(d) != 2)
-                throw not_a_matrix() ;
+            if( d == R_NilValue || Rf_xlength(d) != 2)
+                stop("not a matrix") ;
             vec = x ;
             dims = INTEGER(d) ;
         }
@@ -42,14 +44,17 @@ namespace Rcpp{
         Matrix( const Matrix& other ) = default ;
         Matrix& operator=( const Matrix& ) = default ;
             
-        template <bool NA, typename Expr>
-        Matrix( const SugarMatrixExpression<RTYPE,NA,Expr>& expr ) : vec(expr.nrow() * expr.ncol()) {
+        template <typename eT, typename Expr>
+        Matrix( const SugarMatrixExpression<eT,Expr>& expr ) : vec(expr.nrow() * expr.ncol()) {
             set_dimensions( expr.nrow(), expr.ncol() ) ;
             expr.apply(*this) ;
         }
-        template <bool NA, typename Expr>
-        Matrix& operator=( const SugarMatrixExpression<RTYPE,NA,Expr>& expr ) {
-            if( nrow() != expr.nrow() || ncol() != expr.ncol() ) throw incompatible_dimensions() ;
+        
+        template <typename eT, typename Expr>
+        Matrix& operator=( const SugarMatrixExpression<eT,Expr>& expr ) {
+            if( nrow() != expr.nrow() || ncol() != expr.ncol() ) {
+                stop("incompatible dimensions, expecting (%d,%d), got (%d,%d)", nrow(), ncol(), expr.nrow(), expr.ncol()) ;
+            }
             expr.apply(*this) ;
             return *this ;
         }
@@ -58,19 +63,29 @@ namespace Rcpp{
             
         inline int nrow() const { return dims[0] ; }
         inline int ncol() const { return dims[1] ; }
-        inline int size() const { return vec.size() ; }
+        inline R_xlen_t size() const { return vec.size() ; }
         
-        inline iterator begin(){ return vec.begin() ; }
+        inline iterator begin(){ 
+            RCPP_DEBUG( "Matrix::begin() = %p", vec.begin() ) ;
+            return vec.begin() ; 
+        }
         inline iterator end(){ return vec.end(); }
                    
-        inline const_iterator begin() const { return vec.begin() ; }
-        inline const_iterator end() const { return vec.end(); }
+        inline const iterator begin() const {
+            RCPP_DEBUG( "Matrix::begin() const = %p", vec.begin() ) ;
+            return vec.begin() ; 
+        }
+        inline const iterator end() const { return vec.end(); }
               
-        inline Proxy operator[](int i){ return vec[i] ; }
-        inline const_Proxy operator[](int i) const{ return vec[i] ; }
+        inline Proxy operator[](R_xlen_t i){ return vec[i] ; }
+        inline const Proxy operator[](R_xlen_t i) const{ return vec[i] ; }
         
-        inline Proxy operator()(int i, int j) { return vec[offset(i,j)] ; }
-        inline const_Proxy operator()(int i, int j) const { return vec[offset(i,j)] ; }
+        inline Proxy operator()(int i, int j) { 
+            return vec[offset(i,j)] ; 
+        }
+        inline const Proxy operator()(int i, int j) const { 
+            return const_cast<Vec&>(vec)[offset(i,j)] ;
+        }
         
         inline Column column(int i){ return Column(*this, i) ; }
         inline Column operator()(internal::NamedPlaceHolder, int i){ return column(i); }
@@ -80,7 +95,7 @@ namespace Rcpp{
         
     private:
         
-        inline int offset(int i, int j) const {
+        inline R_xlen_t offset(int i, int j) const {
             return i + nrow()*j ;
         }
         

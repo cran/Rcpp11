@@ -11,23 +11,16 @@ namespace Rcpp{
      * that are found in places where a pair list has to grow efficiently, e.g.
      * in the R parser (gram.y)
      */
-    RCPP_API_CLASS(StretchyList_Impl),
-        public DottedPairProxyPolicy<StretchyList_Impl<StoragePolicy> >, 
-        public DottedPairMultipleNamedProxyPolicy<StretchyList_Impl<StoragePolicy>>
+    template <typename Storage>
+    class StretchyList_Impl :
+        public DottedPairProxyPolicy<StretchyList_Impl<Storage> >, 
+        public DottedPairMultipleNamedProxyPolicy<StretchyList_Impl<Storage>>
     {
-    public:
-        
-        RCPP_GENERATE_CTOR_ASSIGN(StretchyList_Impl) 
+        RCPP_API_IMPL_NOCONV(StretchyList_Impl) 
         
         typedef typename DottedPairProxyPolicy<StretchyList_Impl>::DottedPairProxy Proxy ;
-        typedef typename DottedPairProxyPolicy<StretchyList_Impl>::const_DottedPairProxy const_Proxy ;
         
-        StretchyList_Impl(){
-            SEXP s = Rf_cons(R_NilValue, R_NilValue);
-            SETCAR(s, s);
-            Storage::set__(s) ;
-        }
-        StretchyList_Impl(SEXP x){
+        inline void set(SEXP x){
             Shield<SEXP> s = Rf_cons(R_NilValue, R_NilValue) ;
             if( Rf_isNull(x) ){
                 SETCAR(s,s); 
@@ -40,11 +33,12 @@ namespace Rcpp{
                 SETCAR(s, p) ;
                 
             }
-            Storage::set__(s) ;
+            data = x ;
         }
         
-        inline operator SEXP() const{
-            return CDR(Storage::get__() );    
+        StretchyList_Impl() : data(Rf_cons(R_NilValue, R_NilValue)) {
+            SEXP s = data ;
+            SETCAR(s, s);
         }
         
         template <typename T>
@@ -57,6 +51,10 @@ namespace Rcpp{
             return push_front__impl( obj, typename traits::is_named<T>::type() ) ;    
         }
         
+        inline operator SEXP() const {
+            return CDR(data) ;
+        }
+        
     private:
         
         template <typename T>
@@ -64,7 +62,7 @@ namespace Rcpp{
             Shield<SEXP> s( wrap(obj.object) ) ;
             SEXP tmp  = Rf_cons( s, R_NilValue );
             SET_TAG(tmp, obj.name) ;
-            SEXP self = Storage::get__() ;
+            SEXP self = data ;
             SETCDR( CAR(self), tmp) ;
             SETCAR( self, tmp ) ;
             return *this ;        
@@ -74,7 +72,7 @@ namespace Rcpp{
         StretchyList_Impl& push_back__impl(const T& obj, std::false_type ) {
             Shield<SEXP> s( wrap(obj) ) ;
             SEXP tmp  = Rf_cons( s, R_NilValue );
-            SEXP self = Storage::get__() ;
+            SEXP self = data ;
             SETCDR( CAR(self), tmp) ;
             SETCAR( self, tmp ) ;
             return *this ;    
@@ -83,7 +81,7 @@ namespace Rcpp{
         template <typename T>
         StretchyList_Impl& push_front__impl(const T& obj, std::true_type ) {
             SEXP tmp ;
-            SEXP self = Storage::get__() ;
+            SEXP self = data ;
             Shield<SEXP> s( wrap(obj.object) ) ;
             tmp = Rf_cons(s, CDR(self) ) ;
             SET_TAG(tmp, obj.name );
@@ -94,7 +92,7 @@ namespace Rcpp{
         template <typename T>
         StretchyList_Impl& push_front__impl(const T& obj, std::false_type ) {
             SEXP tmp ;
-            SEXP self = Storage::get__() ;
+            SEXP self = data ;
             Shield<SEXP> s( wrap(obj) ) ;
             tmp = Rf_cons(s, CDR(self) ) ;
             SETCDR(self, tmp) ;
@@ -106,10 +104,10 @@ namespace Rcpp{
     typedef StretchyList_Impl<PreserveStorage> StretchyList ;
     
     template <typename... Args>
-    SEXP structure( SEXP obj, Args... args ){
+    SEXP structure( SEXP obj, Args&&... args ){
         StretchyList attrs = ATTRIB(obj) ;
         
-        attrs.set( args... ) ;
+        attrs.set( std::forward<Args>(args)... ) ;
         SET_ATTRIB(obj, attrs) ;
         
         return obj ;

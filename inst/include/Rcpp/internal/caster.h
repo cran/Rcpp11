@@ -7,17 +7,18 @@ namespace Rcpp{
         template <typename FROM, typename TO> TO caster(FROM from){
             return static_cast<TO>(from) ;
         }
+        template <> inline Rcomplex caster<int, Rcomplex>(int from){
+            return Rcomplex { static_cast<double>(from), 0.0 } ;
+        }
+        template <> inline Rcomplex caster<double, Rcomplex>(double from){
+            return Rcomplex{ from, 0.0 } ;
+        }
+        
         template<> inline Rcomplex caster<std::complex<double>, Rcomplex>( std::complex<double> from){
-            Rcomplex cx ;
-            cx.r = from.real() ; 
-            cx.i = from.imag() ;
-            return cx ;
+            return Rcomplex{ from.real(), from.imag() };
         } 
         template<> inline Rcomplex caster<std::complex<float>, Rcomplex>( std::complex<float> from){
-            Rcomplex cx ;
-            cx.r = static_cast<double>( from.real() ); 
-            cx.i = static_cast<double>( from.imag() );
-            return cx ;
+            return Rcomplex{ static_cast<double>( from.real() ), static_cast<double>( from.imag() ) };
         }
         
         template<> inline std::complex<double> caster<Rcomplex,std::complex<double> >( Rcomplex from){

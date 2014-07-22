@@ -2,37 +2,25 @@
 #define Rcpp__sugar__lapply_h
 
 namespace Rcpp{
+    
     namespace sugar{
-    
-        template <int RTYPE, bool NA, typename T, typename Function>
-        class Lapply : public SugarVectorExpression< 
-            VECSXP , 
-            true ,
-            Lapply<RTYPE,NA,T,Function>
-        > {
-        public:         
-            typedef Rcpp::VectorBase<RTYPE,NA,T> VEC ;
-            typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
+        
+        template <typename eT, typename Function>
+        struct Wrapper{ 
+            Wrapper(Function f_): f(f_){}
             
-            Lapply( const VEC& vec_, Function fun_ ) : 
-                vec(vec_), fun(fun_){}
-        
-            inline SEXP operator[]( int i ) const {
-                return Rcpp::wrap( fun( vec[i] ) );
+            inline SEXP operator()( eT obj ) const {
+                return wrap(f(obj));    
             }
-            inline int size() const { return vec.size() ; }
-        
-        private:
-            const VEC& vec ;
-            Function fun ;
+            
+            Function f ;
         } ;
-    
+        
     } // sugar
     
-    template <int RTYPE, bool NA, typename T, typename Function >
-    inline sugar::Lapply<RTYPE,NA,T,Function> 
-    lapply( const Rcpp::VectorBase<RTYPE,NA,T>& t, Function fun ){
-        return sugar::Lapply<RTYPE,NA,T,Function>( t, fun ) ;
+    template <typename eT, typename Expr, typename Function >
+    inline auto lapply( const SugarVectorExpression<eT,Expr>& t, Function fun ) -> decltype( sapply(t, sugar::Wrapper<eT,Function>(fun) ) ) {
+        return sapply( t, sugar::Wrapper<eT,Function>(fun) );
     }
 
 } // Rcpp

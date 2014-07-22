@@ -9,10 +9,10 @@ namespace Rcpp {
         
         class DottedPairProxy : public GenericProxy<DottedPairProxy> {
         public:
-            DottedPairProxy( CLASS& v, int index_ ) : node(R_NilValue){
-                if( index_ >= v.length() ) throw index_out_of_bounds() ;
+            DottedPairProxy( CLASS& v, R_xlen_t index_ ) : node(R_NilValue){
+                if( index_ >= v.length() ) stop("index out of bounds") ;
                 SEXP x = v ; /* implicit conversion */
-                for( int i = 0; i<index_; i++, x = CDR(x) ) ;
+                for( R_xlen_t i = 0; i<index_; i++, x = CDR(x) ) ;
                 node = x ;
             }
             
@@ -58,33 +58,11 @@ namespace Rcpp {
             SEXP node ;
         } ;
     
-        class const_DottedPairProxy : public GenericProxy<const_DottedPairProxy>{
-        public:
-            const_DottedPairProxy( const CLASS& v, int index_ ): node(R_NilValue){
-                if( index_ >= v.length() ) throw index_out_of_bounds() ;
-                SEXP x = v ; /* implicit conversion */
-                for( int i = 0; i<index_; i++, x = CDR(x) ) ;
-                node = x ;
-            } 
-            
-            template <typename T> operator T() const {
-                return as<T>(get());  
-            }
-            
-            inline SEXP get() const { 
-                return CAR(node); 
-            }
-            inline operator SEXP() const { return get() ; }
-        
-        private:
-            SEXP node ;
-        } ;
-    
-        DottedPairProxy operator[]( int i){
+        DottedPairProxy operator[]( R_xlen_t i){
             return DottedPairProxy( static_cast<CLASS&>(*this), i ) ;    
         }
-        const_DottedPairProxy operator[](int i) const{
-            return const_DottedPairProxy( static_cast<const CLASS&>(*this), i ) ;    
+        const DottedPairProxy operator[](R_xlen_t i) const{
+            return DottedPairProxy( const_cast<CLASS&>(static_cast<const CLASS&>(*this)), i ) ;
         }
         
     } ;

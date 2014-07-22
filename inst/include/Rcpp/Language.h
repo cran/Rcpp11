@@ -8,71 +8,34 @@ namespace Rcpp{
      *
      * This represents calls that can be evaluated
      */
-    RCPP_API_CLASS(Language_Impl)
-        , public DottedPairProxyPolicy<Language_Impl<StoragePolicy>>, 
-        public DottedPairImpl<Language_Impl<StoragePolicy>>
+    template <typename Storage>
+    class Language_Impl: 
+        public DottedPairProxyPolicy<Language_Impl<Storage>>, 
+        public DottedPairImpl<Language_Impl<Storage>>
     {
-    public:
-        typedef typename DottedPairProxyPolicy<Language_Impl<StoragePolicy>>::DottedPairProxy Proxy;
-        typedef typename DottedPairProxyPolicy<Language_Impl<StoragePolicy>>::const_DottedPairProxy const_Proxy;
+        RCPP_API_IMPL(Language_Impl)
         
-        RCPP_GENERATE_CTOR_ASSIGN(Language_Impl) 
-
-        Language_Impl(){}
-        
-        
-        /**
-         * Attempts to convert the SEXP to a call
-         *
-         * @throw not_compatible if the SEXP could not be converted
-         * to a call using as.call
-         */
-        Language_Impl(SEXP lang){
-            Storage::set__( r_cast<LANGSXP>(lang) ) ;
+        inline void set(SEXP x){
+            data = r_cast<LANGSXP>(x) ;    
         }
         
-        /**
-         * Creates a call using the given symbol as the function name
-         *
-         * @param symbol symbol name to call
-         *
-         * Language( "rnorm" ) makes a SEXP similar to this (expressed in R)
-         * > as.call( as.list( as.name( "rnorm") ) )
-         * > call( "rnorm" )
-         */
-        explicit Language_Impl( const std::string& symbol ){
-            Storage::set__( Rf_lang1( Rf_install(symbol.c_str()) ) ) ;
-        }
-
-        /**
-         * Creates a call using the given symbol as the function name
-         *
-         * @param symbol symbol name to call
-         *
-         * Language( Symbol("rnorm") ) makes a SEXP similar to this: 
-         * > call( "rnorm" )
-         */
-        explicit Language_Impl( const Symbol& symbol ){
-            Storage::set__( Rf_lang1( symbol ) );    
-        }
-
+        typedef typename DottedPairProxyPolicy<Language_Impl<Storage>>::DottedPairProxy Proxy;
+        
         /**
          * Creates a call to the function
          * 
          * @param function function to call
          */
-        explicit Language_Impl( const Function& function) {
-            Storage::set__( Rf_lang1( function ) ) ;
-        }
+        explicit Language_Impl( const Function& function) : 
+            data( Rf_lang1( function ) ){}
         
         template<typename... Args> 
-        Language_Impl( const std::string& symbol, const Args&... args) {
-            Storage::set__( language( Rf_install( symbol.c_str() ), args...) ) ;
-        }
+        Language_Impl( const std::string& symbol, Args&&... args) : 
+            data( language( Symbol(symbol), std::forward<Args>(args)...) ){}
+            
         template<typename... Args> 
-        Language_Impl( const Function& function, const Args&... args) {
-            Storage::set__( language( function, args...) ) ;
-        }
+        Language_Impl( const Function& function, Args&&... args) : 
+            data( language( function, std::forward<Args>(args)...)){}
         
         /**
          * sets the symbol of the call
@@ -85,7 +48,6 @@ namespace Rcpp{
          * sets the symbol of the call
          */
         void setSymbol( const Symbol& symbol ){
-            SEXP data = Storage::get__() ;
             SETCAR( data, symbol ) ;
             SET_TAG(data, R_NilValue);  
         }
@@ -101,7 +63,7 @@ namespace Rcpp{
          * eval this call in the requested environment
          */
         SEXP eval(SEXP env) const {
-            return Rcpp_eval( Storage::get__(), env ) ;
+            return Rcpp_eval( data, env ) ;
         }
 
     };
@@ -111,15 +73,15 @@ namespace Rcpp{
     class typed_call {
     public:
         typedef Language::Proxy Proxy ;
-        
-        typed_call( Language call_) : call(call_){
-            for( int i=0; i<n; i++){
+            
+        typed_call( Language call_ ) : call(call_){
+            for( R_xlen_t i=0; i<n; i++){
                 proxies.emplace_back( call, i+1 ) ;
             }
         }
         
-        inline OUT operator()( const Args&... args ){
-            set__impl( traits::number_to_type<n>(), args... ) ;
+        inline OUT operator()( Args&&... args ){
+            set__impl( traits::number_to_type<n>(), std::forward<Args>(args)... ) ;
             return as<OUT>( call.eval() ) ;
         }
         
@@ -129,15 +91,12 @@ namespace Rcpp{
         std::vector<Proxy> proxies ;
         
         template <int N, typename First, typename... Types>
-        inline void set__impl( traits::number_to_type<N>, const First& first, const Types&... args ){
+        inline void set__impl( traits::number_to_type<N>, const First& first, Types&&... args ){
             proxies[n-N] = first ;
-            set_impl( traits::number_to_type<N-1>(), args...) ;
+            set_impl( traits::number_to_type<N-1>(), std::forward<Args>(args)...) ;
         }
         
-        template <typename First>
-        inline void set_impl( traits::number_to_type<1>, const First& first ){
-            proxies[n-1] = first ;
-        }
+        inline void set_impl( traits::number_to_type<0> ){}
         
     } ;
     
