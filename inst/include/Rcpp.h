@@ -1,6 +1,19 @@
 #ifndef Rcpp11_h
 #define Rcpp11_h
 
+// #define RCPP11_EXPERIMENTAL_PRESERVE
+#define RCPP11_EXPERIMENTAL_PARALLEL
+
+// minimum size for parallel features to kick in
+#ifndef RCPP11_PARALLEL_MINIMUM_SIZE
+    #define RCPP11_PARALLEL_MINIMUM_SIZE 10000
+#endif
+
+#ifndef RCPP11_PARALLEL_NTHREADS
+    #define RCPP11_PARALLEL_NTHREADS std::thread::hardware_concurrency()
+#endif
+
+
 #include <Rcpp/platform.h>
 
 #include <cmath>
@@ -10,8 +23,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <climits>
+#include <map>
 
 #include <Rcpp/macros/macros.h>
+#include <Rcpp/internal/library.h>
 #include <Rcpp/R.h>
 
 #include <Rcpp/routines.h>
@@ -33,7 +48,6 @@
 #include <queue>
 #include <cxxabi.h>
 
-#include <map>
 #include <set>
 #include <stdexcept>
 #include <vector>
@@ -58,10 +72,7 @@
 #include <Rcpp/Demangler.h>
 #include <Rcpp/utils/describe.h>
 
-#if defined(RCPP11_EXPERIMENTAL_PARALLEL)
 #include <thread>
-#endif
-
 #include <Rcpp/utils/parallel/parallel.h>
 
 namespace Rcpp{
@@ -169,8 +180,8 @@ namespace Rcpp{
 
 #include <Rcpp/storage/storage.h>
 #include <Rcpp/proxy/GenericProxy.h>
-#include <Rcpp/Symbol.h>
 #include <Rcpp/proxy/proxy.h>
+#include <Rcpp/Symbol.h>
 
 #include <Rcpp/storage/PreserveStorage.h>
 #include <Rcpp/storage/NoProtectStorage.h>
@@ -222,6 +233,8 @@ namespace Rcpp{
 #include <Rcpp/api/meat/meat.h>
 
 #include <Rcpp/Timer.h>
+
+#include <Rcpp/vector/dimnames.h>
 
 namespace Rcpp11 = Rcpp ;
 

@@ -22,12 +22,17 @@ namespace Rcpp{
             
             template <typename Target>
             inline void apply( Target& target ) const {
+                apply_parallel(target ) ;
+            }
+            
+            template <typename Target>
+            inline void apply_serial( Target& target ) const {
                 std::generate_n( target.begin(), n, call ) ;  
             }
             
             template <typename Target>
-            inline void apply_parallel( Target& target, int nthreads ) const {
-                parallel::generate_n(nthreads, target.begin(), n, call) ;    
+            inline void apply_parallel( Target& target ) const {
+                parallel::generate_n( target.begin(), n, call) ;    
             }
             
             inline const_iterator begin() const { return const_iterator( call, 0 ) ; }

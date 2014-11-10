@@ -16,9 +16,12 @@ namespace Rcpp{
             public:
                 typedef typename Rep::Vec Vec ;
                 
-                const_iterator( const Rep& data_, R_xlen_t n, R_xlen_t index_ ) :
-                    data(data_.data), index(index_), src_index(index % n ) {}
+                const_iterator( const Vec& data_, R_xlen_t n_, R_xlen_t index_ ) :
+                    data(data_), n(n_), index(index_), src_index( index % n) {}
                 
+                const_iterator( const Rep& data_, R_xlen_t n_, R_xlen_t index_ ) :
+                    const_iterator(data_.data, n_, index_ ){}
+                    
                 inline const_iterator& operator++(){ 
                     index++;
                     src_index++ ; if( src_index == n ) src_index = 0 ;
@@ -34,6 +37,10 @@ namespace Rcpp{
         
                 inline int operator-( const const_iterator& other ){ 
                     return index - other.index ;    
+                }
+                
+                inline const_iterator operator+( R_xlen_t n_ ) const {
+                    return const_iterator( data, n, index + n_ ) ;        
                 }
                     
             private:
@@ -55,6 +62,11 @@ namespace Rcpp{
         
             template <typename Target>
             inline void apply( Target& target ) const {
+                apply_serial( target ) ;
+            }
+            
+            template <typename Target>
+            inline void apply_serial( Target& target ) const {
                 auto it = target.begin() ;
                 
                 // then copy
@@ -64,8 +76,9 @@ namespace Rcpp{
             }
             
             template <typename Target>
-            inline void apply_parallel( Target& target, int nthreads ) const {
-                apply(target) ;
+            inline void apply_parallel( Target& target ) const {
+                // TODO: parallel version
+                apply_serial(target) ;
             }
             
             
@@ -94,12 +107,17 @@ namespace Rcpp{
         
             template <typename Target>
             inline void apply( Target& target ) const {
+                apply_serial( target ) ; 
+            }
+            
+            template <typename Target>
+            inline void apply_serial( Target& target ) const {
                 std::fill( target.begin(), target.end(), x ) ;    
             }
             
             template <typename Target>
-            inline void apply_parallel( Target& target, int nthreads ) const {
-                apply(target) ;
+            inline void apply_parallel( Target& target ) const {
+                apply_serial(target) ;
             }
             
             inline const_iterator begin() const { return const_iterator( x, 0 ) ; }

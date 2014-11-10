@@ -17,15 +17,20 @@ namespace Rcpp{
                 return 1 + i ;
             }
             inline R_xlen_t size() const { return len ; }
-             
+            
             template <typename Target>
             inline void apply( Target& target ) const {
+                apply_parallel( target ) ;     
+            }
+            
+            template <typename Target>
+            inline void apply_serial( Target& target ) const {
                 std::iota( target.begin(), target.end(), 1 ) ;     
             }
             
             template <typename Target>
-            inline void apply_parallel( Target& target, int nthreads ) const {
-                parallel::iota(nthreads, target.begin(), target.end(), 1 ) ;    
+            inline void apply_parallel( Target& target ) const {
+                parallel::iota( target.begin(), target.end(), 1 ) ;    
             }
             
             inline const_iterator begin() const { return const_iterator( *this, 0 ) ; }
@@ -48,15 +53,20 @@ namespace Rcpp{
                 return index_start + i ;
             }
             inline R_xlen_t size() const { return index_end-index_start+1 ; }
-             
+            
             template <typename Target>
             inline void apply( Target& target ) const {
+                apply_parallel(target);
+            }
+            
+            template <typename Target>
+            inline void apply_serial( Target& target ) const {
                 std::iota( target.begin(), target.end(), index_start ) ;     
             }
             
             template <typename Target>
-            inline void apply_parallel( Target& target, int nthreads ) const {
-                parallel::iota(nthreads, target.begin(), target.end(), index_start ) ;    
+            inline void apply_parallel( Target& target ) const {
+                parallel::iota(target.begin(), target.end(), index_start ) ;    
             }
         
             inline const_iterator begin() const { return const_iterator( *this, 0 ) ; }
