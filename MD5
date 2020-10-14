@@ -1,4 +1,4 @@
-8b57df0d5d9bc8cefd873804707edbde *DESCRIPTION
+784ec1e2714567e6e4efa8a976a76ee0 *DESCRIPTION
 a1cec91dcaf76bfda5ecee5b97dce8cf *LICENSE
 68b329da9893e34099c7d8ad5cb9c940 *NAMESPACE
 0f89f38286870ae05909a93ddc3c6ba7 *R/zzz.R
@@ -229,7 +229,7 @@ af3e2baf7978f8e75f4ff3b485f8ba62 *inst/include/Rcpp/traits/r_type_traits.h
 e8b6b9f7fe7c8cbebaa55d12a6be7d35 *inst/include/Rcpp/traits/same_mapply_scalar_type.h
 73ee1c34b8fb4c8a35a3c50df5cbd1d5 *inst/include/Rcpp/traits/sequence.h
 097f5a153507e269f2da6cbe51452899 *inst/include/Rcpp/traits/sfinae.h
-705b9dc33268260e0beaf8b4acb5de4a *inst/include/Rcpp/traits/static_max_int.h
+089421ccb36adf1862c273fc74b26b47 *inst/include/Rcpp/traits/static_max_int.h
 acc218743cbafa75fa39017d138abd7e *inst/include/Rcpp/traits/storage_type.h
 b712cd05f21ed242fc785d6bc4a21ed5 *inst/include/Rcpp/traits/traits.h
 478947c23d7e9e9ddc0044daaf9fa83b *inst/include/Rcpp/traits/vector_of.h
